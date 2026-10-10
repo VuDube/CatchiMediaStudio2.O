@@ -74,3 +74,4 @@ docs/SETUP.md         Browser-only setup & secrets guide
 5. Optional power-ups (same Secrets page): `ASSET_GITHUB_TOKEN` (fine-grained PAT, contents:write on this repo — enables GitHub media storage), `GROQ_API_KEY`, `HF_TOKEN`.
 
 Full details: [docs/SETUP.md](docs/SETUP.md)
+
