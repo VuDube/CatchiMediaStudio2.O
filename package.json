@@ -1,0 +1,16 @@
+{
+  "name": "catchimediastudio2-o",
+  "version": "2.0.0",
+  "private": true,
+  "description": "CatchiMediaStudio2.O — zero-cost AI media generation factory on Cloudflare Workers + GitHub free tiers",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "dev": "npm run build && wrangler dev",
+    "check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
