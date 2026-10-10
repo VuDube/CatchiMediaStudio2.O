@@ -7,6 +7,7 @@
   let dbPromise;
   let pollTimer = null;
   let activeObjectUrls = [];
+  let installPromptEvent = null;
 
   function message(id, text, type = '') {
     const node = document.getElementById(id);
@@ -103,6 +104,37 @@
     $('#connection-label').textContent = online ? 'Connected' : 'Offline';
     $('#connection-dot').className = `status-dot ${online ? 'good' : 'warn'}`;
     $('#network-banner').hidden = online;
+  }
+
+  function setupInstallPrompt() {
+    const button = $('#install-button');
+    if (!button) return;
+    const alreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    button.hidden = alreadyInstalled;
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      installPromptEvent = event;
+      button.hidden = false;
+    });
+    button.addEventListener('click', async () => {
+      if (!installPromptEvent) return;
+      const promptEvent = installPromptEvent;
+      installPromptEvent = null;
+      button.disabled = true;
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice?.outcome === 'accepted') button.hidden = true;
+      } catch (error) {
+        console.warn('PWA installation prompt was unavailable.', error);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    window.addEventListener('appinstalled', () => {
+      installPromptEvent = null;
+      button.hidden = true;
+    });
   }
 
   function openDB() {
@@ -447,7 +479,7 @@
     }
     await renderAssemblyImages(); message('assembly-message', 'Source images are on this device only.', 'success');
   });
-  $('#assembly-button').addEventListener('click', async () => {
+  $('#assemble-button').addEventListener('click', async () => {
     const selectedIds = [...$('#assembly-image-list').selectedOptions].map((o) => o.value).filter(Boolean);
     if (!selectedIds.length) return message('assembly-message', 'Select at least one local source image.', 'error');
     if (selectedIds.length > 10) return message('assembly-message', 'Select no more than 10 images.', 'error');
@@ -590,5 +622,6 @@
   $('#theme-toggle').addEventListener('click', () => { const light = document.documentElement.classList.toggle('light-theme'); localStorage.setItem('catchi-theme', light ? 'light' : 'dark'); });
   $('#account-button').addEventListener('click', () => toast('Signed in as the single administrator.'));
   window.addEventListener('online', updateConnection); window.addEventListener('offline', updateConnection);
+  setupInstallPrompt();
   initialize();
 })();
