@@ -215,8 +215,8 @@ async function runTextModel(env, prompt, system) {
   return { text: out.response || out.result?.response || '', provider: 'workers-ai', model: MODELS.text };
 }
 
-async function runImageModel(env, prompt, steps) {
-  const out = await env.AI.run(MODELS.image, { prompt, num_steps: steps || 4 });
+async function runImageModel(env, prompt) {
+  const out = await env.AI.run(MODELS.image, { prompt });
   // flux-1-schnell returns base64 PNG in `image`
   const b64 = out.image;
   const binary = atob(b64);
@@ -387,7 +387,7 @@ async function handleApi(request, env, ctx) {
         return json(payload);
       }
       if (kind === 'image') {
-        const img = await runImageModel(env, prompt, body.steps);
+        const img = await runImageModel(env, prompt);
         const { meta } = await storeBinary(env, { ...img, type: 'image', prompt, model: MODELS.image, provider: 'workers-ai' });
         await bumpLedger(env, 'images');
         await bumpLedger(env, 'neurons_estimate', 5);
