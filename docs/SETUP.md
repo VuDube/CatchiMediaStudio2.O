@@ -26,7 +26,19 @@ The Worker expects these bindings:
 
 The Worker API also needs the main queue's consumer configuration: one message per batch, a bounded retry count, a delay, and `catchimedia-studio-dlq` as the dead-letter queue. Attach a bounded dead-letter consumer so exhausted jobs are marked failed. `wrangler.toml` records the intended declarations.
 
-Configure secrets in the Cloudflare Worker dashboard or through an authorized deployment channel. Do not store passwords, API tokens, `.dev.vars`, or generated private media in this repository. Use a unique password (at least 16 characters) and a separate random session secret. If an administrator password is rotated, update only the hash secret; existing signed sessions remain subject to their expiration.
+Configure secrets in the Cloudflare Worker dashboard or through an authorized deployment channel. The bootstrap administrator password is delivered privately in the deployment handoff and is never stored here. Use a unique password (at least 16 characters) and a separate random session secret. Do not store passwords, API tokens, `.dev.vars`, or generated private media in this repository.
+
+To rotate the administrator password, generate its SHA-256 digest without echoing the plaintext into shell history:
+
+```sh
+python3 - <<'PY'
+import getpass, hashlib
+password = getpass.getpass("New administrator password: ")
+print(hashlib.sha256(password.encode("utf-8")).hexdigest())
+PY
+```
+
+Set the digest (not the password) as the `ADMIN_PASSWORD_HASH` Worker secret, either in Cloudflare's Worker settings or with `npx wrangler secret put ADMIN_PASSWORD_HASH --name catchimediastudio2-o`. Existing signed sessions remain active until they expire (at most 12 hours).
 
 ## GitHub Actions deployment
 
