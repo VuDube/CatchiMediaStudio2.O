@@ -1,249 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CatchiMediaStudio2.O — AI Media Factory</title>
-<style>
-  :root {
-    --bg: #0b0d12; --panel: #141824; --panel2: #1b2130; --line: #2a3245;
-    --txt: #e8ecf4; --dim: #8a93a8; --acc: #6c8cff; --acc2: #37d0a0; --err: #ff6c7a;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--txt); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; }
-  header { padding: 22px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  .logo { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
-  .logo span { color: var(--acc); }
-  .badge { font-size: 11px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--dim); }
-  .badge.on { color: var(--acc2); border-color: var(--acc2); }
-  nav { display: flex; gap: 8px; padding: 14px 28px 0; flex-wrap: wrap; }
-  nav button { background: none; border: 1px solid var(--line); color: var(--dim); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; }
-  nav button.active { background: var(--acc); color: #fff; border-color: var(--acc); }
-  main { padding: 24px 28px; max-width: 1080px; margin: 0 auto; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
-  .tab { display: none; } .tab.active { display: block; }
-  textarea, input[type=text] { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; color: var(--txt); padding: 12px 14px; font-size: 15px; font-family: inherit; resize: vertical; }
-  textarea { min-height: 110px; }
-  .row { display: flex; gap: 12px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
-  .go { background: var(--acc); color: #fff; border: none; padding: 11px 26px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
-  .go:disabled { opacity: .5; cursor: wait; }
-  .q { background: var(--panel2); color: var(--dim); border: 1px solid var(--line); padding: 11px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; }
-  .status { font-size: 13px; color: var(--dim); }
-  .result { margin-top: 20px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: none; }
-  .result.show { display: block; }
-  .result img { max-width: 100%; border-radius: 10px; }
-  .result pre { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.6; }
-  .result a { color: var(--acc); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
-  .card { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  .card img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
-  .card .meta { padding: 10px 12px; font-size: 12px; color: var(--dim); }
-  .card .meta .p { color: var(--txt); font-size: 13px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card audio { width: 100%; margin-top: 8px; }
-  .err { color: var(--err); font-size: 13px; margin-top: 10px; }
-  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
-  .stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-  .stat .v { font-size: 22px; font-weight: 700; color: var(--acc2); }
-  .stat .l { font-size: 12px; color: var(--dim); margin-top: 4px; }
-  footer { text-align: center; color: var(--dim); font-size: 12px; padding: 30px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101016">
+  <meta name="description" content="A private creative production workspace for real text, image and speech generation, with browser-local media retention.">
+  <title>CatchiMediaStudio — Creative production workspace</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
 <body>
-<header>
-  <div class="logo">Catchi<span>MediaStudio</span>2.O</div>
-  <div class="badge" id="b-ai">Workers AI</div>
-  <div class="badge" id="b-kv">KV Metadata</div>
-  <div class="badge" id="b-gh">GitHub Storage</div>
-  <div class="badge" id="b-groq">Groq</div>
-</header>
-<nav>
-  <button data-tab="image" class="active">Image Studio</button>
-  <button data-tab="text">Text Studio</button>
-  <button data-tab="speech">Speech Studio</button>
-  <button data-tab="gallery">Gallery</button>
-  <button data-tab="ops">Operations</button>
-</nav>
-<main>
-  <section class="tab active" id="tab-image">
-    <div class="panel">
-      <h2>Image Generation</h2>
-      <p class="status" style="margin:8px 0 14px">Flux-1 Schnell on Cloudflare Workers AI — edge-native, sub-second, free-tier neurons.</p>
-      <textarea id="img-prompt" placeholder="A cinematic photo of a lighthouse at dusk, dramatic clouds..."></textarea>
-      <div class="row">
-        <button class="go" id="img-go">Generate Image</button>
-        <button class="q" id="img-queue">Queue for background</button>
-        <span class="status" id="img-status"></span>
+  <div class="network-banner" id="network-banner" hidden>Offline. The workspace shell is available; generation and account data need a connection.</div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="#dashboard" aria-label="CatchiMediaStudio home"><span class="brand-mark" aria-hidden="true">C</span><span class="brand-copy"><strong>CatchiMediaStudio</strong><small>Creative production</small></span></a>
+      <nav class="main-nav" aria-label="Workspace">
+        <button class="nav-item active" data-view="dashboard" type="button"><span class="nav-glyph">01</span>Overview</button>
+        <button class="nav-item" data-view="projects" type="button"><span class="nav-glyph">02</span>Projects</button>
+        <button class="nav-item" data-view="content" type="button"><span class="nav-glyph">03</span>Content studio</button>
+        <button class="nav-item" data-view="image" type="button"><span class="nav-glyph">04</span>Image studio</button>
+        <button class="nav-item" data-view="audio" type="button"><span class="nav-glyph">05</span>Audio studio</button>
+        <button class="nav-item" data-view="video" type="button"><span class="nav-glyph">06</span>Video studio</button>
+        <button class="nav-item" data-view="library" type="button"><span class="nav-glyph">07</span>Asset library</button>
+        <button class="nav-item" data-view="operations" type="button"><span class="nav-glyph">08</span>Operations</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="privacy-mini"><span class="status-dot good"></span><span>Private workspace<br><small>Single administrator</small></span></div><button class="nav-item quiet" id="logout-button" type="button"><span class="nav-glyph">↗</span>Sign out</button><p class="sidebar-version">v2.1 · Zero-cost guardrails</p></div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar"><button class="icon-button mobile-menu" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button><div class="breadcrumb"><span>Workspace</span><span class="crumb-sep">/</span><strong id="current-view-name">Overview</strong></div><div class="topbar-actions"><span class="connection-state"><i class="status-dot good" id="connection-dot"></i><span id="connection-label">Connected</span></span><button class="icon-button" id="theme-toggle" type="button" aria-label="Switch light or dark theme">◐</button><button class="avatar-button" id="account-button" type="button" aria-label="Administrator account">AD</button></div></header>
+      <section class="signin-screen" id="signin-screen" aria-labelledby="signin-title" hidden><div class="signin-card"><span class="eyebrow">PRIVATE CREATIVE WORKSPACE</span><h1 id="signin-title">Welcome back.</h1><p>Sign in to access your projects, jobs and locally retained media.</p><form id="signin-form" autocomplete="on"><label for="signin-password">Administrator password</label><input id="signin-password" name="password" type="password" autocomplete="current-password" required maxlength="256" aria-describedby="signin-error"><button class="button primary full" type="submit">Sign in</button><p class="form-message" id="signin-error" role="alert" aria-live="polite"></p></form><div class="signin-note"><strong>Private by design</strong><span>There is no public registration. All private API operations require an authenticated session.</span></div></div></section>
+
+      <div class="workspace" id="workspace" hidden>
+        <section class="view active" id="view-dashboard" data-view-panel="dashboard" aria-labelledby="dashboard-title"><div class="page-heading"><div><span class="eyebrow">YOUR WORKSPACE</span><h1 id="dashboard-title">Good work starts here.</h1><p class="muted">Plan, create and keep track of your production work.</p></div><button class="button primary" type="button" data-open-view="content">Start creating <span aria-hidden="true">→</span></button></div>
+          <div class="notice notice-warn" id="storage-notice"><span class="notice-icon">i</span><p><strong>Media retention:</strong> new image and speech files are saved in this browser only. Download important work. Text outputs and project metadata are stored privately in Cloudflare KV.</p></div>
+          <div class="metric-grid"><article class="metric-card"><span class="metric-label">Active projects</span><strong id="metric-projects">—</strong><span class="metric-foot">Your private workspace</span></article><article class="metric-card"><span class="metric-label">Recent jobs</span><strong id="metric-jobs">—</strong><span class="metric-foot">Actual backend job records</span></article><article class="metric-card"><span class="metric-label">Available studios</span><strong>3</strong><span class="metric-foot">Text, image and audio</span></article><article class="metric-card"><span class="metric-label">Video synthesis</span><strong class="metric-small">Unavailable</strong><span class="metric-foot">Planning and browser assembly only</span></article></div>
+          <div class="content-grid dashboard-grid"><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">RECENT ACTIVITY</span><h2>Jobs</h2></div><button class="text-button" data-open-view="operations" type="button">View operations</button></div><div class="list-stack" id="dashboard-jobs"><div class="empty-state">Loading job history…</div></div></article><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">YOUR WORK</span><h2>Projects</h2></div><button class="text-button" data-open-view="projects" type="button">View projects</button></div><div class="list-stack" id="dashboard-projects"><div class="empty-state">Loading projects…</div></div></article></div><div class="capability-strip" id="capability-strip"></div>
+        </section>
+
+        <section class="view" id="view-projects" data-view-panel="projects" aria-labelledby="projects-title" hidden><div class="page-heading"><div><span class="eyebrow">PROJECT MANAGEMENT</span><h1 id="projects-title">Projects</h1><p class="muted">Keep objectives, audiences, brand instructions and reusable prompts together.</p></div><button class="button primary" id="new-project-button" type="button">New project <span aria-hidden="true">＋</span></button></div><div class="projects-layout"><div class="panel-card project-list-card"><div class="panel-heading"><div><span class="eyebrow">WORKSPACE</span><h2>Your projects</h2></div><span class="count-pill" id="project-count">0</span></div><div class="list-stack" id="project-list"></div></div>
+          <form class="panel-card project-form" id="project-form"><div class="panel-heading"><div><span class="eyebrow">PROJECT DETAILS</span><h2 id="project-form-title">Create a project</h2></div><span class="save-state" id="project-save-state"></span></div><input type="hidden" id="project-id"><div class="field"><label for="project-name">Project name</label><input id="project-name" maxlength="80" required placeholder="e.g. Spring launch campaign"></div><div class="field"><label for="project-description">Description</label><textarea id="project-description" rows="2" maxlength="1000" placeholder="What is this project about?"></textarea></div><div class="form-row"><div class="field"><label for="project-objective">Objective</label><input id="project-objective" maxlength="1000" placeholder="Desired outcome"></div><div class="field"><label for="project-audience">Audience</label><input id="project-audience" maxlength="500" placeholder="Who is it for?"></div></div><div class="field"><label for="project-channels">Channels <span class="field-hint">Separate with commas</span></label><input id="project-channels" maxlength="500" placeholder="Instagram, newsletter, website"></div><div class="field"><label for="project-brand">Brand instructions</label><textarea id="project-brand" rows="3" maxlength="1200" placeholder="Tone, terminology and creative guardrails"></textarea></div><div class="template-editor"><div class="panel-heading compact"><div><span class="eyebrow">REUSABLE PROMPTS</span><h3>Templates</h3></div></div><div class="form-row"><input id="template-name" aria-label="Template name" maxlength="80" placeholder="Template name"><button id="add-template" class="button secondary" type="button">Add prompt</button></div><textarea id="template-prompt" rows="2" maxlength="1500" aria-label="Template prompt" placeholder="Reusable prompt instructions"></textarea><div id="project-template-list" class="template-list"></div></div><div class="form-actions"><button class="button primary" type="submit" id="save-project-button">Create project</button><button class="button secondary" type="button" id="archive-project-button" hidden>Archive</button><button class="button danger" type="button" id="delete-project-button" hidden>Delete</button></div><p class="form-message" id="project-message" role="status" aria-live="polite"></p></form></div>
+        </section>
+
+        <section class="view" id="view-content" data-view-panel="content" aria-labelledby="content-title" hidden><div class="page-heading"><div><span class="eyebrow">TEXT & CAMPAIGNS</span><h1 id="content-title">Content studio</h1><p class="muted">Generate real text outputs with a bounded Cloudflare Workers AI job.</p></div><span class="provider-chip"><i class="status-dot good"></i>Workers AI · Llama 3.1 8B</span></div><div class="studio-layout"><form class="panel-card studio-form" id="content-form"><div class="field"><label for="content-project">Project</label><select id="content-project"><option value="">No project</option></select></div><div class="field"><label for="content-mode">Workflow</label><select id="content-mode"><option value="custom">Custom brief</option><option value="caption">Social captions</option><option value="campaign">Campaign plan</option><option value="article">Article draft</option><option value="email">Email copy</option><option value="video-script">Video script</option><option value="storyboard">Storyboard text</option><option value="rewrite">Rewrite</option><option value="translate">Translation</option><option value="seo">SEO metadata</option></select></div><div class="field"><label for="content-template">Project prompt template</label><select id="content-template"><option value="">No template selected</option></select></div><div class="field"><label for="content-prompt">Brief or source text</label><textarea id="content-prompt" rows="10" maxlength="2000" required placeholder="Describe the deliverable, audience, tone and any constraints…"></textarea><div class="input-meta"><span>Up to 2,000 characters</span><span id="content-char-count">0 / 2,000</span></div></div><button class="button primary full" type="submit" id="content-submit">Generate text <span aria-hidden="true">→</span></button><p class="form-message" id="content-message" role="status" aria-live="polite"></p><p class="fine-print">A successful job contains a real model response. Free-provider quotas can be exhausted; the app never swaps in sample text.</p></form><div class="panel-card output-card"><div class="panel-heading"><div><span class="eyebrow">RESULT</span><h2>Editable output</h2></div><span class="status-pill" id="content-job-status">Ready</span></div><div class="job-progress" id="content-job-detail" aria-live="polite">Your accepted job and provider status will appear here.</div><label class="sr-only" for="content-result">Generated text output</label><textarea class="output-text" id="content-result" rows="18" placeholder="Your generated content will appear here…"></textarea><div class="form-actions"><button class="button secondary" id="copy-content" type="button" disabled>Copy text</button><button class="button primary" id="save-content" type="button" disabled>Save to library</button><a class="button secondary disabled-link" id="download-content" href="#" download="catchi-content.txt" aria-disabled="true">Download .txt</a></div></div></div></section>
+
+        <section class="view" id="view-image" data-view-panel="image" aria-labelledby="image-title" hidden><div class="page-heading"><div><span class="eyebrow">ORIGINAL VISUALS</span><h1 id="image-title">Image studio</h1><p class="muted">Generate a real image; save the returned file to this browser or download it.</p></div><span class="provider-chip"><i class="status-dot good"></i>Workers AI · FLUX.1 schnell</span></div><div class="studio-layout image-layout"><form class="panel-card studio-form" id="image-form"><div class="field"><label for="image-project">Project</label><select id="image-project"><option value="">No project</option></select></div><div class="field"><label for="image-prompt">Image prompt</label><textarea id="image-prompt" rows="7" maxlength="2048" required placeholder="Describe the subject, setting, style, lighting and composition…"></textarea><div class="input-meta"><span>Up to 2,048 characters</span><span id="image-char-count">0 / 2,048</span></div></div><div class="form-row"><div class="field"><label for="image-steps">Inference steps</label><select id="image-steps"><option value="4" selected>4 · Recommended</option><option value="6">6</option><option value="8">8 · Maximum</option></select></div><div class="field"><label for="image-seed">Seed <span class="field-hint">Optional</span></label><input id="image-seed" type="number" min="1" max="9999999999" placeholder="Random"></div></div><p class="fine-print">The selected model does not expose aspect-ratio or negative-prompt controls here; unsupported controls are intentionally omitted.</p><button class="button primary full" type="submit" id="image-submit">Generate image <span aria-hidden="true">→</span></button><p class="form-message" id="image-message" role="status" aria-live="polite"></p></form><div class="panel-card preview-card"><div class="panel-heading"><div><span class="eyebrow">IMAGE PREVIEW</span><h2>Generated file</h2></div><span class="status-pill" id="image-status">Ready</span></div><div class="media-preview empty-preview" id="image-preview"><div class="preview-placeholder"><span class="preview-mark">C</span><p>Your actual generated image will appear here.</p></div></div><div class="media-meta" id="image-meta"></div><div class="form-actions"><a class="button secondary disabled-link" id="image-download" href="#" download="catchi-image.jpg" aria-disabled="true">Download image</a><span class="fine-print" id="image-retention"></span></div></div></div></section>
+
+        <section class="view" id="view-audio" data-view-panel="audio" aria-labelledby="audio-title" hidden><div class="page-heading"><div><span class="eyebrow">VOICE & TRANSCRIPTION</span><h1 id="audio-title">Audio studio</h1><p class="muted">Generate speech and transcribe bounded uploads with real Workers AI models.</p></div><span class="provider-chip"><i class="status-dot good"></i>Workers AI · MeloTTS + Whisper</span></div><div class="content-grid audio-grid"><form class="panel-card studio-form" id="speech-form"><div class="panel-heading"><div><span class="eyebrow">TEXT TO SPEECH</span><h2>Narration</h2></div></div><div class="field"><label for="speech-project">Project</label><select id="speech-project"><option value="">No project</option></select></div><div class="field"><label for="speech-text">Script</label><textarea id="speech-text" rows="6" maxlength="1200" required placeholder="Enter a short narration script…"></textarea><div class="input-meta"><span>Up to 1,200 characters</span><span id="speech-char-count">0 / 1,200</span></div></div><div class="field"><label for="speech-language">Language</label><select id="speech-language"><option value="en">English</option><option value="fr">French</option></select></div><p class="fine-print">Voice selection is not exposed: this verified model integration accepts a language setting, not a selectable voice ID.</p><button class="button primary full" type="submit" id="speech-submit">Generate speech</button><p class="form-message" id="speech-message" role="status" aria-live="polite"></p><div id="speech-output" class="audio-output" hidden><audio id="speech-player" controls preload="metadata"></audio><a class="button secondary" id="speech-download" href="#" download="catchi-speech.mp3">Download MP3</a><span class="fine-print" id="speech-retention"></span></div></form><form class="panel-card studio-form" id="transcribe-form"><div class="panel-heading"><div><span class="eyebrow">SPEECH TO TEXT</span><h2>Transcription</h2></div></div><div class="field"><label for="transcribe-project">Project</label><select id="transcribe-project"><option value="">No project</option></select></div><div class="file-drop"><label for="audio-file">Choose an audio file</label><input id="audio-file" type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/aac,audio/flac"><p>MP3, WAV, WebM, Ogg, M4A/MP4, AAC or FLAC · max 512 KiB</p></div><button class="button primary full" type="submit" id="transcribe-submit">Transcribe audio</button><p class="form-message" id="transcribe-message" role="status" aria-live="polite"></p><div class="field transcript-field"><label for="transcript-result">Editable transcript</label><textarea id="transcript-result" rows="8" placeholder="A real transcript will appear here…"></textarea></div><div class="form-actions"><button class="button secondary" id="copy-transcript" type="button" disabled>Copy transcript</button><button class="button secondary" id="save-transcript" type="button" disabled>Save text</button></div></form></div></section>
+
+        <section class="view" id="view-video" data-view-panel="video" aria-labelledby="video-title" hidden><div class="page-heading"><div><span class="eyebrow">VIDEO PRODUCTION</span><h1 id="video-title">Video studio</h1><p class="muted">Keep AI planning, video synthesis and file assembly distinct.</p></div></div><div class="notice notice-warn"><span class="notice-icon">!</span><p><strong>Prompt-to-video is unavailable.</strong> No verified no-charge video-generation provider is configured. The planning workflow creates text only; it will never be labelled as footage.</p></div><div class="video-columns"><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">AI PLANNING</span><h2>Script & storyboard</h2></div><span class="status-pill">Text workflow</span></div><p class="muted">Use the Content Studio’s video-script or storyboard mode for real text planning. Then use those scene notes in browser assembly.</p><button class="button secondary" data-open-view="content" type="button">Open Content Studio</button></article><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">ACTUAL SYNTHESIS</span><h2>Video generation</h2></div><span class="status-pill status-off">Unavailable</span></div><p class="muted">Disabled until a genuinely no-charge provider, supported model contract and complete end-to-end video-file workflow are verified.</p><button class="button secondary" type="button" disabled aria-disabled="true">No video provider configured</button></article></div><article class="panel-card assembly-card"><div class="panel-heading"><div><span class="eyebrow">BROWSER ASSEMBLY</span><h2>Assemble a WebM video</h2></div><span class="status-pill">On this device</span></div><p class="muted">Combines selected images, optional soundtrack and captions using this browser’s canvas and MediaRecorder. Nothing is uploaded. Device memory, codecs and browser support vary.</p><div class="assembly-grid"><div><div class="file-drop"><label for="assembly-images">Add source images</label><input id="assembly-images" type="file" accept="image/*" multiple><p>Up to 10 images · your browser only</p></div><div class="field"><label for="assembly-image-list">Selected local images</label><select id="assembly-image-list" multiple size="6" aria-describedby="assembly-hint"></select><span class="field-hint" id="assembly-hint">Use Ctrl/Cmd to select multiple images.</span></div><div class="file-drop"><label for="assembly-audio">Optional soundtrack</label><input id="assembly-audio" type="file" accept="audio/*"><p>Optional audio file, processed locally</p></div></div><div><div class="field"><label for="assembly-captions">Scene captions <span class="field-hint">One per line</span></label><textarea id="assembly-captions" rows="6" placeholder="Optional subtitle for scene 1&#10;Optional subtitle for scene 2"></textarea></div><div class="field"><label for="assembly-duration">Seconds per image</label><select id="assembly-duration"><option value="3">3 seconds</option><option value="5" selected>5 seconds</option><option value="7">7 seconds</option><option value="10">10 seconds</option></select></div><button class="button primary" type="button" id="assemble-button">Assemble video</button><p class="form-message" id="assembly-message" role="status" aria-live="polite"></p></div></div><video id="assembly-preview" class="assembly-preview" controls playsinline hidden></video><a id="assembly-download" class="button secondary" href="#" download="catchi-assembly.webm" hidden>Download assembled WebM</a><p class="fine-print">Export format is WebM only when supported. A failed browser/device export remains a failure; no server-side FFmpeg service is included.</p></article></section>
+
+        <section class="view" id="view-library" data-view-panel="library" aria-labelledby="library-title" hidden><div class="page-heading"><div><span class="eyebrow">ASSET LIBRARY</span><h1 id="library-title">Your work</h1><p class="muted">Server metadata is private. New media files remain in this browser unless you download them.</p></div><button class="button secondary" id="refresh-library" type="button">Refresh</button></div><div class="notice notice-info" id="legacy-warning" hidden><span class="notice-icon">i</span><p>Older release files are from the previous public-repository storage path. They were not migrated or deleted; those GitHub Release downloads may be publicly accessible. Do not save private files there.</p></div><div class="library-filters"><label for="library-project">Project<select id="library-project"><option value="">All projects</option></select></label><label for="library-type">Type<select id="library-type"><option value="">All types</option><option value="text">Text</option><option value="image">Image</option><option value="speech">Speech</option><option value="transcript">Transcript</option><option value="video">Video</option></select></label><label for="library-search">Search<input id="library-search" type="search" placeholder="Filter by title or model"></label></div><div class="asset-grid" id="asset-grid"><div class="empty-state">Loading library…</div></div></section>
+
+        <section class="view" id="view-operations" data-view-panel="operations" aria-labelledby="operations-title" hidden><div class="page-heading"><div><span class="eyebrow">SYSTEM HEALTH</span><h1 id="operations-title">Operations</h1><p class="muted">Application-side job records and conservative quota reservations, not Cloudflare billing telemetry.</p></div><button class="button secondary" id="refresh-operations" type="button">Refresh status</button></div><div class="notice notice-warn"><span class="notice-icon">!</span><p><strong>Free-use guardrail:</strong> the app enforces conservative per-kind request limits. Its KV estimate is not atomic across concurrent requests and cannot see usage from other Cloudflare services or Workers.</p></div><div class="ops-grid" id="ops-cards"><div class="empty-state">Loading health…</div></div><div class="content-grid"><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">APPLICATION BUDGET</span><h2>Today (UTC)</h2></div></div><div id="budget-detail" class="budget-detail"></div></article><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">RECENT ERRORS</span><h2>Failed jobs</h2></div></div><div id="failed-jobs" class="list-stack"></div></article></div><article class="panel-card"><div class="panel-heading"><div><span class="eyebrow">JOB CENTRE</span><h2>Recent jobs</h2></div></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>Type</th><th>State</th><th>Provider / model</th><th>Project</th><th>Action</th></tr></thead><tbody id="jobs-table"><tr><td colspan="6">Loading jobs…</td></tr></tbody></table></div></article></section>
       </div>
-      <div class="result" id="img-result"></div>
-      <div class="err" id="img-err"></div>
-    </div>
-  </section>
-
-  <section class="tab" id="tab-text">
-    <div class="panel">
-      <h2>Text Generation</h2>
-      <p class="status" style="margin:8px 0 14px">Llama 3.1 8B — Groq high-throughput path when configured, Workers AI otherwise.</p>
-      <textarea id="txt-prompt" placeholder="Write a 30-second product video script for a smart water bottle..."></textarea>
-      <div class="row">
-        <button class="go" id="txt-go">Generate Text</button>
-        <span class="status" id="txt-status"></span>
-      </div>
-      <div class="result" id="txt-result"></div>
-      <div class="err" id="txt-err"></div>
-    </div>
-  </section>
-
-  <section class="tab" id="tab-speech">
-    <div class="panel">
-      <h2>Speech Generation</h2>
-      <p class="status" style="margin:8px 0 14px">MeloTTS on Workers AI — text-to-speech MP3 at the edge.</p>
-      <textarea id="sp-prompt" placeholder="Welcome to CatchiMediaStudio. Your AI content factory is ready."></textarea>
-      <div class="row">
-        <button class="go" id="sp-go">Generate Speech</button>
-        <span class="status" id="sp-status"></span>
-      </div>
-      <div class="result" id="sp-result"></div>
-      <div class="err" id="sp-err"></div>
-    </div>
-  </section>
-
-  <section class="tab" id="tab-gallery">
-    <div class="panel">
-      <div class="row" style="margin-top:0;justify-content:space-between">
-        <h2>Asset Gallery</h2>
-        <button class="q" id="gal-refresh">Refresh</button>
-      </div>
-      <div class="grid" id="gal-grid"></div>
-      <div class="err" id="gal-err"></div>
-    </div>
-  </section>
-
-  <section class="tab" id="tab-ops">
-    <div class="panel">
-      <h2>Operations &amp; Free-Tier Budget</h2>
-      <div class="kv" id="ops-kv"></div>
-      <pre class="status" id="ops-raw" style="margin-top:16px;font-size:12px;white-space:pre-wrap"></pre>
-    </div>
-  </section>
-</main>
-<footer>CatchiMediaStudio2.O — zero-cost AI media factory · Cloudflare Workers free tier · GitHub-powered storage &amp; CI/CD</footer>
-
-<script>
-var $ = function (id) { return document.getElementById(id); };
-
-document.querySelectorAll('nav button').forEach(function (b) {
-  b.addEventListener('click', function () {
-    document.querySelectorAll('nav button').forEach(function (x) { x.classList.remove('active'); });
-    document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
-    b.classList.add('active');
-    $('tab-' + b.dataset.tab).classList.add('active');
-    if (b.dataset.tab === 'gallery') loadGallery();
-    if (b.dataset.tab === 'ops') loadOps();
-  });
-});
-
-function post(url, payload) {
-  return fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(function (r) { return r.json(); });
-}
-
-function bind(kind, promptEl, goEl, stEl, resEl, errEl, render) {
-  $(goEl).addEventListener('click', function () {
-    var prompt = $(promptEl).value.trim();
-    if (!prompt) { $(errEl).textContent = 'Please enter a prompt.'; return; }
-    $(errEl).textContent = '';
-    $(goEl).disabled = true;
-    $(stEl).textContent = 'Generating...';
-    post('/api/generate/' + kind, { prompt: prompt }).then(function (d) {
-      $(goEl).disabled = false;
-      if (d.error) { $(stEl).textContent = ''; $(errEl).textContent = d.error + (d.detail ? ' — ' + d.detail : ''); return; }
-      $(stEl).textContent = d.cached ? 'Done (cache hit — zero quota used)' : 'Done';
-      render(d);
-    }).catch(function (e) {
-      $(goEl).disabled = false;
-      $(stEl).textContent = '';
-      $(errEl).textContent = String(e);
-    });
-  });
-}
-
-bind('image', 'img-prompt', 'img-go', 'img-status', 'img-result', 'img-err', function (d) {
-  var r = $('img-result');
-  r.className = 'result show';
-  r.innerHTML = '<img src="' + d.downloadPath + '" alt="generated">' +
-    '<p class="status" style="margin-top:10px">' + d.model + ' · ' + d.storage + ' · ' + Math.round(d.size / 1024) + ' KB · ' +
-    '<a href="' + d.downloadPath + '" download>Download</a></p>';
-});
-
-$('img-queue').addEventListener('click', function () {
-  var prompt = $('img-prompt').value.trim();
-  if (!prompt) return;
-  post('/api/queue', { type: 'image', prompt: prompt }).then(function () {
-    $('img-status').textContent = 'Queued — processed by the cron worker within a minute.';
-  });
-});
-
-bind('text', 'txt-prompt', 'txt-go', 'txt-status', 'txt-result', 'txt-err', function (d) {
-  var r = $('txt-result');
-  r.className = 'result show';
-  r.innerHTML = '<pre></pre><p class="status" style="margin-top:10px">' + d.provider + ' · ' + d.model + '</p>';
-  r.querySelector('pre').textContent = d.text;
-});
-
-bind('speech', 'sp-prompt', 'sp-go', 'sp-status', 'sp-result', 'sp-err', function (d) {
-  var r = $('sp-result');
-  r.className = 'result show';
-  r.innerHTML = '<audio controls src="' + d.downloadPath + '"></audio>' +
-    '<p class="status" style="margin-top:10px">' + d.model + ' · ' + d.storage + ' · <a href="' + d.downloadPath + '" download>Download MP3</a></p>';
-});
-
-function loadGallery() {
-  $('gal-err').textContent = '';
-  fetch('/api/assets').then(function (r) { return r.json(); }).then(function (d) {
-    var g = $('gal-grid');
-    g.innerHTML = '';
-    (d.items || []).forEach(function (m) {
-      var c = document.createElement('div');
-      c.className = 'card';
-      var inner = '';
-      if (m.type === 'image') inner += '<img loading="lazy" src="' + m.downloadPath + '">';
-      inner += '<div class="meta"><div class="p"></div>' + m.type + ' · ' + m.storage + ' · ' + new Date(m.createdAt).toLocaleString();
-      if (m.type === 'speech') inner += '<audio controls src="' + m.downloadPath + '"></audio>';
-      inner += '</div>';
-      c.innerHTML = inner;
-      c.querySelector('.p').textContent = m.prompt || '';
-      g.appendChild(c);
-    });
-    if (!d.items || !d.items.length) g.innerHTML = '<p class="status">No assets yet — generate something in the studios.</p>';
-  }).catch(function (e) { $('gal-err').textContent = String(e); });
-}
-$('gal-refresh').addEventListener('click', loadGallery);
-
-function loadOps() {
-  fetch('/api/health').then(function (r) { return r.json(); }).then(function (d) {
-    var t = d.today || {};
-    var stats = [
-      ['Images today', t.images || 0],
-      ['Texts today', t.texts || 0],
-      ['Speech today', t.speech || 0],
-      ['Neurons est. / 10,000', t.neurons_estimate || 0],
-      ['Queue jobs done', t.queued_image || 0],
-      ['Cleanup runs', t.cleanup_runs || 0]
-    ];
-    $('ops-kv').innerHTML = stats.map(function (s) {
-      return '<div class="stat"><div class="v">' + s[1] + '</div><div class="l">' + s[0] + '</div></div>';
-    }).join('');
-    $('b-ai').className = 'badge ' + (d.integrations.workersAI ? 'on' : '');
-    $('b-kv').className = 'badge ' + (d.integrations.kv ? 'on' : '');
-    $('b-gh').className = 'badge ' + (d.integrations.githubStorage ? 'on' : '');
-    $('b-groq').className = 'badge ' + (d.integrations.groq ? 'on' : '');
-    $('ops-raw').textContent = JSON.stringify(d, null, 2);
-  });
-}
-loadOps();
-</script>
+    </main>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

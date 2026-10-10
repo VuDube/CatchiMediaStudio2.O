@@ -1,48 +1,31 @@
-name: Asset Lifecycle Maintenance
+name: Legacy Release Asset Audit (read-only)
 
-# Runs daily (plus on demand) using the built-in GITHUB_TOKEN —
-# deletes generated media release assets older than 60 days so the
-# repository stays comfortably inside GitHub free storage quotas.
 on:
-  schedule:
-    - cron: '30 0 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  cleanup:
-    name: Purge aged release assets
+  audit:
+    name: Report legacy asset count without deleting files
     runs-on: ubuntu-latest
     steps:
-      - name: Cleanup assets older than retention window
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const RETENTION_DAYS = 60;
-            const cutoff = Date.now() - RETENTION_DAYS * 86400000;
-            const { owner, repo } = context.repo;
-
-            let release;
-            try {
-              release = (await github.rest.repos.getReleaseByTag({ owner, repo, tag: 'catchi-media-assets' })).data;
-            } catch (e) {
-              core.info('Asset release not found yet — nothing to clean.');
-              return;
-            }
-
-            const assets = await github.paginate(github.rest.repos.listReleaseAssets, {
-              owner, repo, release_id: release.id, per_page: 100,
-            });
-
-            let deleted = 0, kept = 0;
-            for (const asset of assets) {
-              if (new Date(asset.created_at).getTime() < cutoff) {
-                await github.rest.repos.deleteReleaseAsset({ owner, repo, asset_id: asset.id });
-                deleted++;
-              } else {
-                kept++;
-              }
-            }
-            core.info(`Scanned ${assets.length} assets — deleted ${deleted}, kept ${kept}.`);
+      - name: Inspect legacy release metadata only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/catchi-media-assets" > /tmp/release.json; then
+            count=$(jq '.assets | length' /tmp/release.json)
+            oldest=$(jq -r '[.assets[].created_at] | sort | .[0] // "none"' /tmp/release.json)
+            {
+              echo "## Legacy release audit"
+              echo "Assets present: $count"
+              echo "Oldest created-at timestamp: $oldest"
+              echo "No assets were downloaded, listed by filename, modified or deleted."
+              echo "The repository is public; legacy Release asset URLs may be public too."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No legacy release found; no assets were changed." >> "$GITHUB_STEP_SUMMARY"
+          fi

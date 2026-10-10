@@ -1,34 +1,36 @@
-# CatchiMediaStudio2.O — Wrangler configuration
+# CatchiMediaStudio production Worker. It uses only Cloudflare AI, KV and Queues.
 name = "catchimediastudio2-o"
 main = "dist/worker.js"
-compatibility_date = "2026-01-01"
+compatibility_date = "2026-10-01"
+workers_dev = true
 
-# ------------------------------------------------------------------
-# Workers AI binding (free tier: 10,000 neurons/day)
-# ------------------------------------------------------------------
 [ai]
 binding = "AI"
 
-# ------------------------------------------------------------------
-# Workers KV metadata store (free tier: 1 GB, 100k reads/day)
-# Namespace ID is provisioned and locked to this account.
-# ------------------------------------------------------------------
 [[kv_namespaces]]
 binding = "METADATA"
 id = "90754c58723443dc8bc5248a0f5873fa"
 
-# ------------------------------------------------------------------
-# Cron Triggers: process the KV job queue every minute; the worker
-# also runs asset lifecycle cleanup on the 00:xx UTC pass.
-# ------------------------------------------------------------------
-[triggers]
-crons = ["* * * * *"]
+# Queue messages contain only opaque job IDs; prompts and small text outputs stay in KV.
+[[queues.producers]]
+binding = "GENERATION_QUEUE"
+queue = "catchimedia-studio-jobs"
 
-# ------------------------------------------------------------------
-# Non-secret configuration. Secrets (GITHUB_TOKEN, GROQ_API_KEY,
-# HF_TOKEN) are set via the Cloudflare dashboard or wrangler-action
-# `secrets:` input — never committed here.
-# ------------------------------------------------------------------
+[[queues.consumers]]
+queue = "catchimedia-studio-jobs"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 2
+retry_delay = 15
+dead_letter_queue = "catchimedia-studio-dlq"
+
+[[queues.consumers]]
+queue = "catchimedia-studio-dlq"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 1
+
 [vars]
+APP_VERSION = "2.1.0"
 GITHUB_OWNER = "VuDube"
 GITHUB_REPO = "CatchiMediaStudio2.O"

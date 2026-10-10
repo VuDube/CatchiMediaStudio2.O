@@ -1,14 +1,18 @@
 {
   "name": "catchimediastudio2-o",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
-  "description": "CatchiMediaStudio2.O — zero-cost AI media generation factory on Cloudflare Workers + GitHub free tiers",
+  "description": "CatchiMediaStudio — private, zero-cost-guarded creative production workspace on Cloudflare Workers",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "deploy": "npm run build && wrangler deploy",
-    "dev": "npm run build && wrangler dev",
-    "check": "wrangler deploy --dry-run"
+    "test": "npm run build && node --test tests/*.test.js",
+    "check": "npm test && wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "deploy": "npm test && wrangler deploy",
+    "dev": "wrangler dev --local"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

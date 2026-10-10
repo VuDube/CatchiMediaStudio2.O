@@ -1,53 +1,69 @@
-name: Deploy to Cloudflare Workers
+name: Deploy CatchiMediaStudio to Cloudflare
 
-# Browser-first CI/CD: deploys on every push to main AND on demand
-# from the GitHub Actions tab (workflow_dispatch) — no CLI required.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "deploy" to confirm'
+        description: Select deploy only when you intend to release the current main branch
+        type: choice
         required: true
-        default: 'deploy'
+        default: hold
+        options:
+          - hold
+          - deploy
 
 permissions:
   contents: read
 
+concurrency:
+  group: catchi-production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    name: Build & Deploy CatchiMediaStudio2.O
+    if: github.ref == 'refs/heads/main' && inputs.confirm == 'deploy'
+    name: Verify and deploy approved main revision
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CATCHI_APP_URL: https://catchimediastudio2-o.vusumuzi-dube.workers.dev
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-
-      - name: Build worker (inline studio UI)
-        run: npm run build
-
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
-          # Optional secrets — created in the Cloudflare dashboard or
-          # listed here so wrangler-action pushes repo-secret values
-          # into the Worker on every deploy:
-          secrets: |
-            GITHUB_TOKEN
-            GROQ_API_KEY
-            HF_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run tests and production bundle dry run
+        run: |
+          npm test
+          npx wrangler deploy --dry-run --outdir .wrangler/dry-run
+      - name: Deploy this revision to Cloudflare
+        run: npx wrangler deploy
+      - name: Smoke-test public shell, manifest, health and authentication boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "$CATCHI_APP_URL/" >/tmp/catchi-index.html
+          curl --fail --silent --show-error "$CATCHI_APP_URL/manifest.webmanifest" >/tmp/catchi-manifest.json
+          curl --fail --silent --show-error "$CATCHI_APP_URL/api/health" >/tmp/catchi-health.json
+          curl --fail --silent --show-error "$CATCHI_APP_URL/styles.css" >/dev/null
+          curl --fail --silent --show-error "$CATCHI_APP_URL/app.js" >/dev/null
+          python3 - <<'PY'
+          import json
+          health=json.load(open('/tmp/catchi-health.json'))
+          manifest=json.load(open('/tmp/catchi-manifest.json'))
+          assert health.get('status') == 'ok', health
+          assert health.get('authRequired') is True, health
+          assert manifest.get('name','').startswith('CatchiMediaStudio'), manifest
+          print('Health and PWA manifest passed; version:', health.get('version'))
+          PY
+          CODE=$(curl --silent --show-error -o /tmp/catchi-protected.json -w '%{http_code}' "$CATCHI_APP_URL/api/projects")
+          test "$CODE" = "401"
+          echo "Unauthenticated project API returned 401 as expected."
+          echo "Live provider inference smoke test intentionally skipped: account-wide Workers AI usage/plan could not be verified without billing/subscription permission."
